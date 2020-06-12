@@ -1,0 +1,173 @@
+.image-clipper-wrap {
+	position: fixed;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background: #000;
+	width: 100%;
+	height: 100%;
+	z-index: 1000;
+
+	* {
+		box-sizing: border-box;
+	}
+
+	.clipper-wrap {
+		position: relative;
+		top: 50%;
+		background-color: #fff;
+		transform: translateY(-50%);
+		max-height: 100%;
+		background-size: 100%;
+		background-repeat: no-repeat;
+
+		&:after {
+			position: absolute;
+			content: '';
+			display: block;
+			width: 100%;
+			height: 100%;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(0, 0, 0, .7);
+		}
+
+		canvas {
+			display: block;
+		}
+
+		.clip-img {
+			position: absolute;
+			z-index: 10;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: #fff;
+			clip: rect(5px, 155px, 155px, 5px);
+		}
+	}
+
+	.operate-frame {
+		position: absolute;
+		width: 150px;
+		height: 150px;
+
+		z-index: 10;
+		border: 1px solid #fff;
+
+
+		& > div {
+			position: absolute;
+			background: transparent;
+			cursor: move;
+
+			&:after {
+				position: absolute;
+				content: '';
+				background: red;
+			}
+		}
+
+		.box {
+			position: relative;
+			width: 100%;
+			height: 100%;
+			background: transparent;
+
+			&:after {
+				display: none;
+			}
+		}
+
+		.l {
+			left: -10px;
+			top: -1px;
+			bottom: -1px;
+			width: 20px;
+
+			&:after {
+				top: 0;
+				left: 9px;
+				bottom: 0;
+				width: 3px;
+			}
+		}
+
+		.r {
+			right: -10px;
+			top: -1px;
+			bottom: -1px;
+			width: 20px;
+
+			&:after {
+				top: 0;
+				right: 9px;
+				bottom: 0;
+				width: 3px;
+			}
+		}
+
+		.t {
+			right: -1px;
+			top: -10px;
+			left: -1px;
+			height: 20px;
+
+			&:after {
+				top: 8px;
+				right: 0;
+				left: 0;
+				height: 3px;
+			}
+		}
+
+		.b {
+			right: -1px;
+			bottom: -10px;
+			left: -1px;
+			height: 20px;
+
+			&:after {
+				bottom: 9px;
+				right: 0;
+				left: 0;
+				height: 3px;
+			}
+		}
+
+		.lt {
+			position: absolute;
+			top: -2px;
+			left: -2px;
+			width: 40px;
+			height: 40px;
+			background: green;
+			z-index: 10;
+		}
+
+		.rt {
+			@extend .lt;
+			left: auto;
+			right: -2px;
+		}
+
+		.lb {
+			@extend .lt;
+			top: auto;
+			bottom: -2px;
+			left: -2px;
+		}
+
+		.rb {
+			@extend .lt;
+			top: auto;
+			bottom: -2px;
+			left: auto;
+			right: -2px;
+		}
+	}
+}
