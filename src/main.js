@@ -1,10 +1,15 @@
 import AnyTouch from '@any-touch/core'
 import Pan from '@any-touch/pan'
+import Observer from './Observer'
+import {getFileImageInfo, compress} from './utils'
 
 AnyTouch.use(Pan)
-export default class ImageClipper {
-	constructor() {
+export default class ImageClipper extends Observer {
+	constructor(el, options = {}) {
+		super()
 		this.dpi = window.devicePixelRatio
+		this.options = options
+		this.rootDom = el
 		this.init()
 	}
 
@@ -12,57 +17,80 @@ export default class ImageClipper {
 		this.createDom()
 	}
 
-	createDom() {
-		const rootDom = document.createElement('div')
-		const clipperWrap = document.createElement('div')
-		rootDom.setAttribute('class', 'image-clipper-wrap')
-		clipperWrap.setAttribute('class', 'clipper-wrap')
-		rootDom.style.display = 'none'
-		rootDom.appendChild(clipperWrap)
-		document.body.appendChild(rootDom)
-		this.rootDom = rootDom
-		this.clipperWrap = clipperWrap
+	setLoading(text) {
+		const loadingText = text || this.options.loadingText || '加载中'
+		const loading = this.rootDom.querySelector('.ic-loading')
+		loading.style.display = ''
+		loading.innerHTML = loadingText
 	}
 
-	show() {
-		this.rootDom.style.display = 'block'
+	closeLoading() {
+		const loading = this.rootDom.querySelector('.ic-loading')
+		loading.style.display = 'none'
+	}
+
+	createDom() {
+		this.rootDom.innerHTML = `
+		<div class="ic-wrap image-clipper">
+			<div class="ic-loading"></div>
+			<div class="clipper-wrap">
+				<img src="" class="clip-img" alt="">
+			</div>
+		</div>
+		`
+		this.clipperWrap = this.rootDom.querySelector('.clipper-wrap')
+	}
+
+	destruction() {
+		if (this.frame) {
+			this.clipperWrap.removeChild(this.frame)
+		}
+		this.clipperWrapData = null
+		this.clipImg = null
+		this.frameData = null
 	}
 
 	start(file) {
-		this.show()
+		this.destruction()
+		this.setLoading()
+		this.file = file
 		return new Promise((resolve, reject) => {
-			this.compress(file).then(file => {
-				this.getFileImageInfo(file).then(res => {
-					const {width, height, img, base64} = res
-					const w = this.rootDom.clientWidth
+			compress(file).then(file => {
+				getFileImageInfo(file).then(res => {
+					const {width, height, base64} = res
+					this.clipImg = this.clipperWrap.querySelector('.clip-img')
+					this.clipImg.src = base64
+
+					const w = this.clipperWrap.clientWidth
 					this.clipperWrapData = {
 						width: w,
 						height: (w * height) / width,
 					}
 					this.clipperWrap.style.width = this.clipperWrapData.width + 'px'
 					this.clipperWrap.style.height = this.clipperWrapData.height + 'px'
-					img.setAttribute('class', 'clip-img')
 					this.clipperWrap.style.backgroundImage = `url(${base64})`
-					this.clipImg = img
-					this.clipperWrap.appendChild(img)
+
 					this.createOperateFrame()
+					this.closeLoading()
 				})
 			})
 		})
-
 	}
 
-	clipper(x, y, w, h) {
+	clipper2Canvas() {
 		const dpi = 1
+		let {left: x, top: y, width: w, height: h} = this.frameData
+		const {width, height} = this.clipperWrapData
+		const canvas = document.createElement('canvas')
+		const ctx = canvas.getContext('2d')
+
 		x *= dpi
 		y *= dpi
 		w *= dpi
 		h *= dpi
-		const canvas = document.createElement('canvas')
 		canvas.width = w
 		canvas.height = h
-		const ctx = canvas.getContext('2d')
-		const {width, height} = this.clipperWrapData
+
 		ctx.drawImage(this.clipImg, -x, -y, width * dpi, height * dpi)
 		return canvas
 	}
@@ -248,22 +276,23 @@ export default class ImageClipper {
 			height: h,
 		}
 		this.setFrameCommon(x, y, w, h)
-		this.clipper(x, y, w, h)
+		this.emit('change')
+		this.clipper2Canvas()
 	}
 
 	verifyInfo(x, y, w, h) {
 		const {width: cw, height: ch} = this.clipperWrapData
-		if (x <= 0) {
-			x = 0
-		}
 		if (x + w >= cw) {
 			x = cw - w
 		}
-		if (y <= 0) {
-			y = 0
+		if (x <= 0) {
+			x = 0
 		}
 		if (y + h >= ch) {
 			y = ch - h
+		}
+		if (y <= 0) {
+			y = 0
 		}
 		if (w > cw) {
 			w = cw
@@ -274,65 +303,13 @@ export default class ImageClipper {
 		return [x, y, w, h]
 	}
 
-	getFileImageInfo(file) {
-		return new Promise((resolve, reject) => {
-			const reader = new FileReader()
-			reader.readAsDataURL(file)
-			reader.onload = e => {
-				const img = new Image()
-				img.src = e.target.result
-				img.onload = () => {
-					const {width, height} = img
-					resolve({
-						width,
-						height,
-						base64: e.target.result,
-						size: file.size,
-						type: file.type,
-						file,
-						img
-					})
-				}
-				img.onerror = e => {
-					console.log('加载图片失败')
-					reject(e)
-				}
-			}
-			reader.onerror = e => {
-				console.log('render图片失败')
-				reject(e)
-			}
-		})
-	}
-
-	compress(file, maxWidth = 1000, encoderOptions = 1) {
-		return this.getFileImageInfo(file).then(res => {
-			const {width, height, img} = res
-			const canvas = document.createElement('canvas')
-			const ctx = canvas.getContext('2d')
-
-			// 缩放图片至合适尺寸
-			let cw = width
-			let ch = height
-			if (width > maxWidth) {
-				cw = maxWidth
-				ch = (maxWidth * height) / width
-			} else {
-				return file
-			}
-
-			canvas.width = cw
-			canvas.height = ch
-
-			ctx.clearRect(0, 0, cw, ch)
-			ctx.drawImage(img, 0, 0, cw, ch)
-			return new Promise((resolve) => {
-				canvas.toBlob(blob => {
-					blob.lastModifiedDate = new Date()
-					const f = new File([blob], file.name, {type: blob.type})
-					resolve(f)
-				}, file.type, encoderOptions)
-			})
+	clipper2File(encoderOptions = 1) {
+		return new Promise((resolve) => {
+			const {name, type} = this.file
+			this.clipper2Canvas().toBlob(blob => {
+				const file = new File([blob], name, {type})
+				resolve(file)
+			}, type, encoderOptions)
 		})
 	}
 }

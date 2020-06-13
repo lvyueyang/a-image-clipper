@@ -6,17 +6,36 @@
 		  content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
 	<title>ImageClipper</title>
-	<link rel="stylesheet" href="./dist/common.css">
+	<link rel="stylesheet" href="./lib/common.css">
+	<style>
+		body {
+			font-size: 16px;
+		}
+
+		#icw {
+			max-width: 800px;
+			margin: 50px auto;
+			border: 1px solid #000;
+			padding: 15px;
+		}
+	</style>
 </head>
 <body>
 <input type="file" id="File">
-
+<div id="icw"></div>
+<img src="" id="img" alt="">
 </body>
-<script src="./dist/ImageClipper.js"></script>
+<script src="./lib/ImageClipper.js"></script>
 <script>
-	const clipper = new ImageClipper()
+	const clipper = new ImageClipper(document.querySelector('#icw'))
+
+	clipper.on('change', () => {
+		const canvas = clipper.clipper2Canvas()
+		document.querySelector('#img').setAttribute('src', canvas.toDataURL())
+	})
 	document.querySelector('#File').addEventListener('change', function (e) {
-		clipper.start(e.target.files[0])
+		const file = e.target.files[0]
+		clipper.start(file)
 	})
 </script>
 </html>

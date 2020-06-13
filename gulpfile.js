@@ -16,7 +16,8 @@ function scssToCss() {
 	src('src/style/common.scss')
 		.pipe(sass())
 		.on('error', swallowError)
-		.pipe(dest('./dist'))
+		.pipe(dest('lib'))
+	console.log('success')
 }
 
 async function rollupBuild(isBuild = false) {
@@ -30,7 +31,7 @@ async function rollupBuild(isBuild = false) {
 		plugins
 	})
 	await bundle.write(rollupConfig.output)
-	console.log('end')
+	console.log('success')
 }
 
 const watch_files = [
@@ -42,8 +43,8 @@ const watch_files = [
 task('serve', () => {
 	try {
 		const watcher = watch(watch_files)
-		watcher.on('change', function (path) {
-			if (path.includes(`src/style/`)) {
+		watcher.on('change', function (p) {
+			if (p.includes(path.join('src/style'))) {
 				scssToCss()
 			} else {
 				rollupBuild().catch(e => {
