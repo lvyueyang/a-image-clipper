@@ -2,6 +2,10 @@
 
 ## 使用  
 ```html
+<link rel="stylesheet" href="./lib/common.css">
+<script src="./lib/ImageClipper.js"></script>
+```
+```html
 <input type="file" id="File" accept="image/*">
 <div id="icw"></div>
 <img src="" id="img" alt="">
